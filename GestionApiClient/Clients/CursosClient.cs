@@ -19,7 +19,9 @@ public class CursosClient
 
     public async Task<CursoDTO?> GetByIdAsync(int id)
     {
-        return await _httpClient.GetFromJsonAsync<CursoDTO>($"api/cursos/{id}");
+        var response = await _httpClient.GetAsync($"api/cursos/{id}");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadFromJsonAsync<CursoDTO>();
     }
 
     public async Task<CursoDTO?> CreateAsync(CursoDTO dto)

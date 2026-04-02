@@ -160,18 +160,38 @@ async Task EditarCurso()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso a editar: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    var curso = await client.Cursos.GetByIdAsync(id);
+    if (curso == null)
+    {
+        Console.WriteLine("\nNo se encontró el curso.");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.WriteLine($"\nCurso actual: {curso.Nombre} - {curso.Anio} / {curso.Division}");
 
     Console.Write("Nuevo nombre: ");
     var nombre = Console.ReadLine()!;
 
     Console.Write("Nuevo año: ");
-    var anio = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int anio))
+    {
+        Console.WriteLine("\nAño inválido, debe ser un número.");
+        Console.ReadKey();
+        return;
+    }
 
     Console.Write("Nueva división: ");
     var division = Console.ReadLine()!;
 
-    var dto = new GestionApiClient.DTOs.CursoDTO
+    var dto = new CursoDTO
     {
         Nombre = nombre,
         Anio = anio,
@@ -183,7 +203,7 @@ async Task EditarCurso()
     if (actualizado != null)
         Console.WriteLine("\nCurso actualizado correctamente.");
     else
-        Console.WriteLine("\nNo se encontró el curso.");
+        Console.WriteLine("\nError al actualizar el curso.");
 
     Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
