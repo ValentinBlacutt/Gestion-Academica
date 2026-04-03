@@ -315,7 +315,12 @@ async Task VerAlumnosDeCurso()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso: ");
-    var cursoId = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var alumnos = await client.Alumnos.GetActivosByCursoAsync(cursoId);
 
@@ -448,7 +453,12 @@ async Task DarDeBajaAlumno()
     Console.WriteLine("=== DAR DE BAJA ALUMNO ===\n");
 
     Console.Write("Ingresá el ID del alumno: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var resultado = await client.Alumnos.BajaAsync(id);
 

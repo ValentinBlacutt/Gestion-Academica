@@ -133,7 +133,7 @@ public class AlumnosService : IAlumnosService
 
         alumno.Estado = EstadoAlumno.ExAlumno;
         alumno.CursoId = null;
-        alumno.FechaBaja = DateTime.Today;
+        alumno.FechaBaja = DateTime.UtcNow.Date;
 
         await _context.SaveChangesAsync();
         return true;
@@ -146,7 +146,7 @@ public class AlumnosService : IAlumnosService
 
         alumno.Estado = EstadoAlumno.Egresado;
         alumno.CursoId = null;
-        alumno.FechaBaja = DateTime.Today;
+        alumno.FechaBaja = DateTime.UtcNow.Date;
 
         await _context.SaveChangesAsync();
         return true;
