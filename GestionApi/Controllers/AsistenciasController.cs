@@ -1,11 +1,13 @@
 ﻿using GestionApi.DTOs;
 using GestionApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionApi.Controllers;
 
 [ApiController]
 [Route("api/asistencias")]
+[Authorize]
 public class AsistenciasController : ControllerBase
 {
     private readonly IAsistenciasService _asistenciasService;

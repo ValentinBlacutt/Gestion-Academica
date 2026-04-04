@@ -1,4 +1,5 @@
-﻿using GestionApi.Enums;
+﻿using DocumentFormat.OpenXml.Math;
+using GestionApi.Enums;
 using GestionApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Curso> Cursos { get; set; }
     public DbSet<Alumno> Alumnos { get; set; }
     public DbSet<Asistencia> Asistencias { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,5 +42,32 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Asistencia>()
             .HasIndex(a => new { a.AlumnoId, a.Fecha })
             .IsUnique();
+
+        // Usuario — Username único
+        modelBuilder.Entity<Usuario>()
+            .HasIndex(u => u.Username)
+            .IsUnique();
+
+        // Usuario — Email único
+        modelBuilder.Entity<Usuario>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        // Usuario — Rol como string
+        modelBuilder.Entity<Usuario>()
+            .Property(u => u.Rol)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Usuario>().HasData(new Usuario
+        {
+            Id = 1,
+            Username = "admin",
+            Email = "zinclas@gmail.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+            Rol = Rol.Admin,
+            EstaActivo = true,
+            TokenActivacion = null,
+            FechaCreacion = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
     }
 }

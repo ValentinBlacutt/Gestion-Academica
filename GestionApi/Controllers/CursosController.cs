@@ -1,11 +1,13 @@
 ﻿using GestionApi.DTOs;
 using GestionApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionApi.Controllers;
 
 [ApiController]
 [Route("api/cursos")]
+[Authorize]
 public class CursosController : ControllerBase
 {
     private readonly ICursosService _cursosService;
@@ -31,6 +33,7 @@ public class CursosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Create(CursoDTO dto)
     {
         var creado = await _cursosService.CreateAsync(dto);
@@ -38,6 +41,7 @@ public class CursosController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Update(int id, CursoDTO dto)
     {
         var actualizado = await _cursosService.UpdateAsync(id, dto);
@@ -46,6 +50,7 @@ public class CursosController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Delete(int id)
     {
         var resultado = await _cursosService.DeleteAsync(id);

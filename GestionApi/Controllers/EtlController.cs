@@ -1,10 +1,12 @@
 ﻿using GestionApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionApi.Controllers;
 
 [ApiController]
 [Route("api/etl")]
+[Authorize(Roles = "Admin,Directivo")]
 public class EtlController : ControllerBase
 {
     private readonly IEtlService _etlService;

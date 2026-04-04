@@ -9,16 +9,58 @@ var config = new ConfigurationBuilder()
 var baseUrl = config["ApiBaseUrl"]!;
 var client = new GestionApiClient.GestionApiClient(baseUrl);
 
+//Este string se encarga para luego almacenar el rol de usuario
+string? rolActual = null;
+
+// Helpers de permisos
+bool EsAdmin() => rolActual == "Admin";
+bool EsAdminODirectivo() => rolActual == "Admin" || rolActual == "Directivo";
+
+while (rolActual == null)
+{
+    Console.Clear();
+    Console.WriteLine("=== GESTIÓN ACADÉMICA ===\n");
+    Console.WriteLine("1. Iniciar sesión");
+    Console.WriteLine("2. Activar cuenta");
+    Console.WriteLine("0. Salir\n");
+    Console.Write("Elegí una opción: ");
+
+    var opcionInicio = Console.ReadLine();
+
+    switch (opcionInicio)
+    {
+        case "1":
+            rolActual = await Login();
+            break;
+        case "2":
+            await ActivarCuenta();
+            break;
+        case "0":
+            return;
+        default:
+            Console.WriteLine("\nOpción inválida. Presioná cualquier tecla para volver.");
+            Console.ReadKey();
+            break;
+    }
+}
+
+
 bool salir = false;
 
 while (!salir)
 {
     Console.Clear();
-    Console.WriteLine("=== GESTIÓN ACADÉMICA ===\n");
+    Console.WriteLine($"=== GESTIÓN ACADÉMICA === [{rolActual}]\n");
     Console.WriteLine("1. Cursos");
     Console.WriteLine("2. Alumnos");
     Console.WriteLine("3. Asistencias");
-    Console.WriteLine("4. Importar / Exportar");
+
+    if (rolActual == "Admin" || rolActual == "Directivo")
+        Console.WriteLine("4. Importar / Exportar");
+
+    if (rolActual == "Admin")
+        Console.WriteLine("5. Usuarios");
+
     Console.WriteLine("0. Salir\n");
     Console.Write("Elegí una opción: ");
 
@@ -36,7 +78,18 @@ while (!salir)
             await MenuAsistencias();
             break;
         case "4":
-            await MenuEtl();
+            if (EsAdminODirectivo())
+                await MenuEtl();
+            else
+                Console.WriteLine("\nNo tenés permisos. Presioná cualquier tecla.");
+            Console.ReadKey();
+            break;
+        case "5":
+            if (rolActual == "Admin")
+                await MenuUsuarios();
+            else
+                Console.WriteLine("\nNo tenés permisos. Presioná cualquier tecla.");
+            Console.ReadKey();
             break;
         case "0":
             salir = true;
@@ -48,6 +101,70 @@ while (!salir)
     }
 }
 
+#region Auth
+
+async Task<string?> Login()
+{
+    Console.Clear();
+    Console.WriteLine("=== INICIAR SESIÓN ===\n");
+
+    Console.Write("Usuario: ");
+    var username = Console.ReadLine()!;
+
+    Console.Write("Contraseña: ");
+    var password = Console.ReadLine()!;
+
+    var token = await client.Auth.LoginAsync(username, password);
+
+    if (token == null)
+    {
+        Console.WriteLine("\nCredenciales inválidas. Presioná cualquier tecla para volver.");
+        Console.ReadKey();
+        return null;
+    }
+
+    client.SetToken(token);
+
+    // Decodificar el rol del token
+    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+    var jwtToken = handler.ReadJwtToken(token);
+    var rol = jwtToken.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+        ?.Value;
+
+    Console.WriteLine($"\nBienvenido. Rol: {rol}");
+    Console.ReadKey();
+    return rol;
+}
+
+async Task ActivarCuenta()
+{
+    Console.Clear();
+    Console.WriteLine("=== ACTIVAR CUENTA ===\n");
+
+    Console.Write("Token de activación: ");
+    var token = Console.ReadLine()!;
+
+    Console.Write("Nombre de usuario: ");
+    var username = Console.ReadLine()!;
+
+    Console.Write("Contraseña: ");
+    var password = Console.ReadLine()!;
+
+    var resultado = await client.Auth.ActivarCuentaAsync(token, username, password);
+
+    if (resultado)
+        Console.WriteLine("\nCuenta activada correctamente. Ya podés iniciar sesión.");
+    else
+        Console.WriteLine("\nToken inválido o nombre de usuario ya existe.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+#endregion
+
+
 //
 //Esta es la seccion con toda la logica para los cursos. Cada opcion del menu de cursos llama a una funcion que se encarga de realizar la accion correspondiente (ver, crear, editar, eliminar).
 //
@@ -55,37 +172,30 @@ while (!salir)
 async Task MenuCursos()
 {
     bool volver = false;
-
     while (!volver)
     {
         Console.Clear();
         Console.WriteLine("=== CURSOS ===\n");
         Console.WriteLine("1. Ver todos los cursos");
-        Console.WriteLine("2. Crear curso");
-        Console.WriteLine("3. Editar curso");
-        Console.WriteLine("4. Eliminar curso");
+
+        if (EsAdminODirectivo())
+        {
+            Console.WriteLine("2. Crear curso");
+            Console.WriteLine("3. Editar curso");
+            Console.WriteLine("4. Eliminar curso");
+        }
+
         Console.WriteLine("0. Volver\n");
         Console.Write("Elegí una opción: ");
 
         var opcion = Console.ReadLine();
-
         switch (opcion)
         {
-            case "1":
-                await VerCursos();
-                break;
-            case "2":
-                await CrearCurso();
-                break;
-            case "3":
-                await EditarCurso();
-                break;
-            case "4":
-                await EliminarCurso();
-                break;
-            case "0":
-                volver = true;
-                break;
+            case "1": await VerCursos(); break;
+            case "2": if (EsAdminODirectivo()) await CrearCurso(); break;
+            case "3": if (EsAdminODirectivo()) await EditarCurso(); break;
+            case "4": if (EsAdminODirectivo()) await EliminarCurso(); break;
+            case "0": volver = true; break;
             default:
                 Console.WriteLine("\nOpción inválida. Presioná cualquier tecla para volver.");
                 Console.ReadKey();
@@ -242,7 +352,6 @@ async Task EliminarCurso()
 async Task MenuAlumnos()
 {
     bool volver = false;
-
     while (!volver)
     {
         Console.Clear();
@@ -250,53 +359,35 @@ async Task MenuAlumnos()
         Console.WriteLine("1. Ver alumnos de un curso");
         Console.WriteLine("2. Ver ex-alumnos");
         Console.WriteLine("3. Ver egresados");
-        Console.WriteLine("4. Crear alumno");
-        Console.WriteLine("5. Editar alumno");
-        Console.WriteLine("6. Dar de baja alumno");
-        Console.WriteLine("7. Marcar como egresado");
-        Console.WriteLine("8. Ver historial de faltas");
-        Console.WriteLine("9. Mover alumno a otro curso");
-        Console.WriteLine("10. Ver todos los alumnos");
+        Console.WriteLine("4. Ver todos los alumnos");
+        Console.WriteLine("5. Ver historial de faltas");
+
+        if (EsAdminODirectivo())
+        {
+            Console.WriteLine("6. Crear alumno");
+            Console.WriteLine("7. Editar alumno");
+            Console.WriteLine("8. Mover alumno a otro curso");
+            Console.WriteLine("9. Dar de baja alumno");
+            Console.WriteLine("10. Marcar como egresado");
+        }
+
         Console.WriteLine("0. Volver\n");
         Console.Write("Elegí una opción: ");
 
         var opcion = Console.ReadLine();
-
         switch (opcion)
         {
-            case "1":
-                await VerAlumnosDeCurso();
-                break;
-            case "2":
-                await VerExAlumnos();
-                break;
-            case "3":
-                await VerEgresados();
-                break;
-            case "4":
-                await AgregarAlumno();
-                break;
-            case "5":
-                await EditarAlumno();
-                break;
-            case "6":
-                await DarDeBajaAlumno();
-                break;
-            case "7":
-                await MarcarEgresado();
-                break;
-            case "8":
-                await VerHistorialAlumno();
-                break;
-            case "9":
-                await MoverAlumno();
-                break;
-            case "10":
-                await VerTodosLosAlumnos();
-                break;
-            case "0":
-                volver = true;
-                break;
+            case "1": await VerAlumnosDeCurso(); break;
+            case "2": await VerExAlumnos(); break;
+            case "3": await VerEgresados(); break;
+            case "4": await VerTodosLosAlumnos(); break;
+            case "5": await VerHistorialAlumno(); break;
+            case "6": if (EsAdminODirectivo()) await AgregarAlumno(); break;
+            case "7": if (EsAdminODirectivo()) await EditarAlumno(); break;
+            case "8": if (EsAdminODirectivo()) await MoverAlumno(); break;
+            case "9": if (EsAdminODirectivo()) await DarDeBajaAlumno(); break;
+            case "10": if (EsAdminODirectivo()) await MarcarEgresado(); break;
+            case "0": volver = true; break;
             default:
                 Console.WriteLine("\nOpción inválida. Presioná cualquier tecla para volver.");
                 Console.ReadKey();
@@ -866,6 +957,77 @@ async Task ImportarAlumnos()
         Console.WriteLine(mensaje);
 
     Console.WriteLine("\nPresioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+#endregion
+
+//Region encargada de manejo de usuarios
+#region Usuarios
+
+async Task MenuUsuarios()
+{
+    bool volver = false;
+
+    while (!volver)
+    {
+        Console.Clear();
+        Console.WriteLine("=== USUARIOS ===\n");
+        Console.WriteLine("1. Invitar usuario");
+        Console.WriteLine("0. Volver\n");
+        Console.Write("Elegí una opción: ");
+
+        var opcion = Console.ReadLine();
+
+        switch (opcion)
+        {
+            case "1":
+                await InvitarUsuario();
+                break;
+            case "0":
+                volver = true;
+                break;
+            default:
+                Console.WriteLine("\nOpción inválida. Presioná cualquier tecla para volver.");
+                Console.ReadKey();
+                break;
+        }
+    }
+}
+
+async Task InvitarUsuario()
+{
+    Console.Clear();
+    Console.WriteLine("=== INVITAR USUARIO ===\n");
+
+    Console.Write("Email: ");
+    var email = Console.ReadLine()!.Trim();
+
+    Console.WriteLine("1. Admin  2. Preceptor  3. Directivo");
+    Console.Write("Rol: ");
+    var rolOpcion = Console.ReadLine();
+    var rol = rolOpcion switch
+    {
+        "1" => "Admin",
+        "2" => "Preceptor",
+        "3" => "Directivo",
+        _ => null
+    };
+    if (rol == null)
+    {
+        Console.WriteLine("\nRol inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    var token = await client.Auth.InvitarUsuarioAsync(email, rol);
+
+    if (token != null)
+        Console.WriteLine($"\nInvitación creada. Token de activación:\n\n{token}\n");
+    else
+        Console.WriteLine("\nError al crear la invitación. El email ya existe o el rol es inválido.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
 }
 

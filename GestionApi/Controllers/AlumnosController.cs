@@ -1,11 +1,13 @@
 ﻿using GestionApi.DTOs;
 using GestionApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionApi.Controllers;
 
 [ApiController]
 [Route("api")]
+[Authorize]
 public class AlumnosController : ControllerBase
 {
     private readonly IAlumnosService _alumnosService;
@@ -45,6 +47,7 @@ public class AlumnosController : ControllerBase
     }
 
     [HttpPost("alumnos")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Create(AlumnoDTO dto)
     {
         var creado = await _alumnosService.CreateAsync(dto);
@@ -52,6 +55,7 @@ public class AlumnosController : ControllerBase
     }
 
     [HttpPut("alumnos/{id}")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Update(int id, AlumnoDTO dto)
     {
         var actualizado = await _alumnosService.UpdateAsync(id, dto);
@@ -60,6 +64,7 @@ public class AlumnosController : ControllerBase
     }
 
     [HttpPatch("alumnos/{id}/baja")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Baja(int id)
     {
         var resultado = await _alumnosService.BajaAsync(id);
@@ -68,6 +73,7 @@ public class AlumnosController : ControllerBase
     }
 
     [HttpPatch("alumnos/{id}/egresar")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> Egresar(int id)
     {
         var resultado = await _alumnosService.EgresarAsync(id);
@@ -76,6 +82,7 @@ public class AlumnosController : ControllerBase
     }
 
     [HttpPatch("alumnos/{alumnoId}/mover/{cursoId}")]
+    [Authorize(Roles = "Admin,Directivo")]
     public async Task<IActionResult> MoverCurso(int alumnoId, int cursoId)
     {
         var resultado = await _alumnosService.MoverCursoAsync(alumnoId, cursoId);

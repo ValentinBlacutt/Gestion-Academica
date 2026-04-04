@@ -1,0 +1,55 @@
+﻿using GestionApiClient.DTOs;
+using System.Net.Http.Json;
+
+namespace GestionApiClient.Clients;
+
+public class AuthClient
+{
+    private readonly HttpClient _httpClient;
+
+    public AuthClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<string?> LoginAsync(string username, string password)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/auth/login", new LoginRequestDTO
+        {
+            Username = username,
+            Password = password
+        });
+
+        if (!response.IsSuccessStatusCode) return null;
+        var resultado = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        return resultado?.Token;
+    }
+
+    public async Task<string?> InvitarUsuarioAsync(string email, string rol)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/auth/invitar", new InvitarUsuarioDTO
+        {
+            Email = email,
+            Rol = rol
+        });
+        if (!response.IsSuccessStatusCode) return null;
+        var resultado = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        return resultado?.Token;
+    }
+
+    public async Task<bool> ActivarCuentaAsync(string token, string username, string password)
+    {
+        var response = await _httpClient.PostAsJsonAsync("api/auth/activar", new ActivarCuentaDTO
+        {
+            Token = token,
+            Username = username,
+            Password = password
+        });
+        return response.IsSuccessStatusCode;
+    }
+}
+
+public class TokenResponse
+{
+    public string Token { get; set; } = string.Empty;
+}
