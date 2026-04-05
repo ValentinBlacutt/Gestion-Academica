@@ -29,10 +29,19 @@ public class EtlController : ControllerBase
         if (archivo == null || archivo.Length == 0)
             return BadRequest("No se envió ningún archivo.");
 
-        using var stream = new MemoryStream();
-        await archivo.CopyToAsync(stream);
+        if (!archivo.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("El archivo debe ser un Excel (.xlsx).");
 
-        var mensajes = await _etlService.ImportarAlumnosAsync(stream.ToArray());
-        return Ok(mensajes);
+        try
+        {
+            using var stream = new MemoryStream();
+            await archivo.CopyToAsync(stream);
+            var mensajes = await _etlService.ImportarAlumnosAsync(stream.ToArray());
+            return Ok(mensajes);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Error al procesar el archivo: {ex.Message}");
+        }
     }
 }

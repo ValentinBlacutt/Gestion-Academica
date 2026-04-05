@@ -329,7 +329,12 @@ async Task EliminarCurso()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso a eliminar: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var resultado = await client.Cursos.DeleteAsync(id);
 
@@ -466,13 +471,31 @@ async Task AgregarAlumno()
     Console.WriteLine("=== AGREGAR ALUMNO ===\n");
 
     Console.Write("Nombre: ");
-    var nombre = Console.ReadLine()!;
+    var nombre = Console.ReadLine()!.Trim();
+    if (string.IsNullOrWhiteSpace(nombre) || !nombre.All(c => char.IsLetter(c) || c == ' '))
+    {
+        Console.WriteLine("\nEl nombre solo puede contener letras.");
+        Console.ReadKey();
+        return;
+    }
 
     Console.Write("Apellido: ");
-    var apellido = Console.ReadLine()!;
+    var apellido = Console.ReadLine()!.Trim();
+    if (string.IsNullOrWhiteSpace(apellido) || !apellido.All(c => char.IsLetter(c) || c == ' '))
+    {
+        Console.WriteLine("\nEl apellido solo puede contener letras.");
+        Console.ReadKey();
+        return;
+    }
 
     Console.Write("DNI: ");
-    var dni = Console.ReadLine()!;
+    var dni = Console.ReadLine()!.Trim();
+    if (!dni.All(char.IsDigit) || dni.Length != 8 || dni.Length == 0)
+    {
+        Console.WriteLine("\nEl DNI debe contener solo números y tener 8 dígitos.");
+        Console.ReadKey();
+        return;
+    }
 
     var dto = new AlumnoDTO
     {
@@ -487,7 +510,7 @@ async Task AgregarAlumno()
     if (creado != null)
         Console.WriteLine($"\nAlumno agregado correctamente con ID {creado.Id}.");
     else
-        Console.WriteLine("\nError al agregar el alumno.");
+        Console.WriteLine("\nError al agregar el alumno. Es posible que el DNI ya exista.");
 
     Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
@@ -499,7 +522,12 @@ async Task EditarAlumno()
     Console.WriteLine("=== EDITAR ALUMNO ===\n");
 
     Console.Write("Ingresá el ID del alumno a editar: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var alumno = await client.Alumnos.GetByIdAsync(id);
     if (alumno == null)
@@ -510,17 +538,42 @@ async Task EditarAlumno()
     }
 
     Console.WriteLine($"\nAlumno actual: {alumno.Apellido}, {alumno.Nombre} - DNI: {alumno.DNI}");
+    Console.WriteLine("(Dejá en blanco para mantener el valor actual)\n");
 
-    Console.Write("Nuevo nombre: ");
-    var nombre = Console.ReadLine()!;
+    Console.Write($"Nombre [{alumno.Nombre}]: ");
+    var nombre = Console.ReadLine()!.Trim();
+    if (string.IsNullOrWhiteSpace(nombre))
+        nombre = alumno.Nombre;
+    else if (!nombre.All(c => char.IsLetter(c) || c == ' '))
+    {
+        Console.WriteLine("\nEl nombre solo puede contener letras.");
+        Console.ReadKey();
+        return;
+    }
 
-    Console.Write("Nuevo apellido: ");
-    var apellido = Console.ReadLine()!;
+    Console.Write($"Apellido [{alumno.Apellido}]: ");
+    var apellido = Console.ReadLine()!.Trim();
+    if (string.IsNullOrWhiteSpace(apellido))
+        apellido = alumno.Apellido;
+    else if (!apellido.All(c => char.IsLetter(c) || c == ' '))
+    {
+        Console.WriteLine("\nEl apellido solo puede contener letras.");
+        Console.ReadKey();
+        return;
+    }
 
-    Console.Write("Nuevo DNI: ");
-    var dni = Console.ReadLine()!;
+    Console.Write($"DNI [{alumno.DNI}]: ");
+    var dni = Console.ReadLine()!.Trim();
+    if (string.IsNullOrWhiteSpace(dni))
+        dni = alumno.DNI;
+    else if (!dni.All(char.IsDigit) || dni.Length != 8 || dni.Length == 0)
+    {
+        Console.WriteLine("\nEl DNI debe contener solo números y debe tener 8 dígitos.");
+        Console.ReadKey();
+        return;
+    }
 
-    var dto = new GestionApiClient.DTOs.AlumnoDTO
+    var dto = new AlumnoDTO
     {
         Nombre = nombre,
         Apellido = apellido,
@@ -537,7 +590,6 @@ async Task EditarAlumno()
     Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
 }
-
 async Task DarDeBajaAlumno()
 {
     Console.Clear();
@@ -587,7 +639,12 @@ async Task VerHistorialAlumno()
     Console.WriteLine("=== HISTORIAL DE FALTAS ===\n");
 
     Console.Write("Ingresá el ID del alumno: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var resumen = await client.Asistencias.GetResumenAlumnoAsync(id);
 
@@ -727,8 +784,12 @@ async Task RegistrarAsistencia()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso: ");
-    var cursoId = int.Parse(Console.ReadLine()!);
-
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
     var alumnos = await client.Alumnos.GetActivosByCursoAsync(cursoId);
 
     if (alumnos.Count == 0)
@@ -776,8 +837,12 @@ async Task EditarAsistencia()
     foreach (var c in cursos)
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
-    Console.Write("\nIngresá el ID del curso: ");
-    var cursoId = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var asistencias = await client.Asistencias.GetByCursoHoyAsync(cursoId);
 
@@ -824,16 +889,33 @@ async Task VerAsistenciasHoy()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso: ");
-    var cursoId = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var asistencias = await client.Asistencias.GetByCursoHoyAsync(cursoId);
+
+    var estados = new Dictionary<int, string>
+    {
+        { 0, "Presente" },
+        { 1, "Ausente" },
+        { 2, "Tarde" },
+        { 3, "Ausente con presencia" },
+        { 4, "Ausente justificado" }
+    };
 
     Console.WriteLine();
     if (asistencias.Count == 0)
         Console.WriteLine("No hay asistencias registradas hoy para este curso.");
     else
         foreach (var a in asistencias)
-            Console.WriteLine($"AlumnoID: {a.AlumnoId} - Estado: {a.Estado} - Fecha: {a.Fecha}");
+        {
+            var estadoTexto = estados.TryGetValue(a.Estado, out var texto) ? texto : "Desconocido";
+            Console.WriteLine($"AlumnoID: {a.AlumnoId} - Estado: {estadoTexto} - Fecha: {a.Fecha}");
+        }
 
     Console.WriteLine("\nPresioná cualquier tecla para volver.");
     Console.ReadKey();
@@ -845,7 +927,12 @@ async Task VerResumenAlumno()
     Console.WriteLine("=== RESUMEN DE ASISTENCIAS ===\n");
 
     Console.Write("Ingresá el ID del alumno: ");
-    var id = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var resumen = await client.Asistencias.GetResumenAlumnoAsync(id);
 
@@ -906,7 +993,12 @@ async Task ExportarAlumnos()
         Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
 
     Console.Write("\nIngresá el ID del curso: ");
-    var cursoId = int.Parse(Console.ReadLine()!);
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
 
     var archivo = await client.Etl.ExportarAlumnosAsync(cursoId);
 
@@ -920,13 +1012,19 @@ async Task ExportarAlumnos()
     Console.Write("\nIngresá la ruta donde guardar el archivo (ej: C:\\Users\\Usuario\\Desktop\\alumnos.xlsx): ");
     var ruta = Console.ReadLine()!;
 
-    await File.WriteAllBytesAsync(ruta, archivo);
-    Console.WriteLine("\nArchivo exportado correctamente.");
+    try
+    {
+        await File.WriteAllBytesAsync(ruta, archivo);
+        Console.WriteLine("\nArchivo exportado correctamente.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"\nNo se pudo guardar el archivo: {ex.Message}");
+    }
 
     Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
 }
-
 async Task ImportarAlumnos()
 {
     Console.Clear();
@@ -935,28 +1033,42 @@ async Task ImportarAlumnos()
     Console.Write("Ingresá la ruta del archivo Excel: ");
     var ruta = Console.ReadLine()!;
 
+    if (string.IsNullOrWhiteSpace(ruta))
+    {
+        Console.WriteLine("\nLa ruta no puede estar vacía.");
+        Console.ReadKey();
+        return;
+    }
+
     if (!File.Exists(ruta))
     {
-        Console.WriteLine("\nNo se encontró el archivo.");
+        Console.WriteLine("\nNo se encontró el archivo en esa ruta.");
         Console.ReadKey();
         return;
     }
 
-    var archivo = await File.ReadAllBytesAsync(ruta);
-    var mensajes = await client.Etl.ImportarAlumnosAsync(archivo);
-
-    if (mensajes == null)
+    try
     {
-        Console.WriteLine("\nError al importar.");
-        Console.ReadKey();
-        return;
+        var archivo = await File.ReadAllBytesAsync(ruta);
+        var mensajes = await client.Etl.ImportarAlumnosAsync(archivo);
+
+        if (mensajes == null)
+        {
+            Console.WriteLine("\nError al importar.");
+            Console.ReadKey();
+            return;
+        }
+
+        Console.WriteLine("\n=== RESULTADO DE LA IMPORTACIÓN ===\n");
+        foreach (var mensaje in mensajes)
+            Console.WriteLine(mensaje);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"\nError al leer el archivo: {ex.Message}");
     }
 
-    Console.WriteLine("\n=== RESULTADO DE LA IMPORTACIÓN ===\n");
-    foreach (var mensaje in mensajes)
-        Console.WriteLine(mensaje);
-
-    Console.WriteLine("\nPresioná cualquier tecla para volver.");
+    Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
 }
 

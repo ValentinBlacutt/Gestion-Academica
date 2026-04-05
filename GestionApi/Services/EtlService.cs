@@ -58,60 +58,76 @@ public class EtlService : IEtlService
     {
         var mensajes = new List<string>();
 
-        using var stream = new MemoryStream(archivo);
-        using var workbook = new XLWorkbook(stream);
-        var sheet = workbook.Worksheet(1);
+        XLWorkbook workbook;
 
-        var filas = sheet.RowsUsed().Skip(1); // saltear encabezados
+        try
+        {
+            using var stream = new MemoryStream(archivo);
+            workbook = new XLWorkbook(stream);
+        }
+        catch (Exception)
+        {
+            mensajes.Add("El archivo no es un Excel válido o está corrupto.");
+            return mensajes;
+        }
+
+        var sheet = workbook.Worksheet(1);
+        var filas = sheet.RowsUsed().Skip(1);
 
         foreach (var fila in filas)
         {
-            var nombre = fila.Cell(1).GetString().Trim();
-            var apellido = fila.Cell(2).GetString().Trim();
-            var dni = fila.Cell(3).GetString().Trim();
-            var cursoIdStr = fila.Cell(4).GetString().Trim();
-
-            if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(apellido) || string.IsNullOrEmpty(dni))
+            try
             {
-                mensajes.Add($"Fila {fila.RowNumber()}: faltan datos obligatorios (Nombre, Apellido o DNI). Saltada.");
-                continue;
+                var nombre = fila.Cell(1).GetString().Trim();
+                var apellido = fila.Cell(2).GetString().Trim();
+                var dni = fila.Cell(3).GetString().Trim();
+                var cursoIdStr = fila.Cell(4).GetString().Trim();
+
+                if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(apellido) || string.IsNullOrEmpty(dni))
+                {
+                    mensajes.Add($"Fila {fila.RowNumber()}: faltan datos obligatorios (Nombre, Apellido o DNI). Saltada.");
+                    continue;
+                }
+
+                var existe = await _context.Alumnos.AnyAsync(a => a.DNI == dni);
+                if (existe)
+                {
+                    mensajes.Add($"Fila {fila.RowNumber()}: DNI {dni} ya existe en el sistema. Saltado.");
+                    continue;
+                }
+
+                int? cursoId = null;
+                if (!string.IsNullOrEmpty(cursoIdStr) && int.TryParse(cursoIdStr, out int parsedCursoId))
+                {
+                    var cursoExiste = await _context.Cursos.AnyAsync(c => c.Id == parsedCursoId);
+                    if (cursoExiste)
+                        cursoId = parsedCursoId;
+                    else
+                        mensajes.Add($"Fila {fila.RowNumber()}: CursoId {parsedCursoId} no existe. El alumno se importará sin curso.");
+                }
+
+                var alumno = new Models.Alumno
+                {
+                    Nombre = nombre,
+                    Apellido = apellido,
+                    DNI = dni,
+                    CursoId = cursoId,
+                    Estado = Enums.EstadoAlumno.Activo,
+                    FechaBaja = null
+                };
+
+                _context.Alumnos.Add(alumno);
+                await _context.SaveChangesAsync();
+
+                mensajes.Add($"Fila {fila.RowNumber()}: alumno {apellido}, {nombre} importado correctamente.");
             }
-
-            // Verificar DNI duplicado
-            var existe = await _context.Alumnos.AnyAsync(a => a.DNI == dni);
-            if (existe)
+            catch (Exception ex)
             {
-                mensajes.Add($"Fila {fila.RowNumber()}: DNI {dni} ya existe en el sistema. Saltado.");
-                continue;
+                mensajes.Add($"Fila {fila.RowNumber()}: error inesperado — {ex.Message}. Saltada.");
             }
-
-            // Verificar CursoId
-            int? cursoId = null;
-            if (!string.IsNullOrEmpty(cursoIdStr) && int.TryParse(cursoIdStr, out int parsedCursoId))
-            {
-                var cursoExiste = await _context.Cursos.AnyAsync(c => c.Id == parsedCursoId);
-                if (cursoExiste)
-                    cursoId = parsedCursoId;
-                else
-                    mensajes.Add($"Fila {fila.RowNumber()}: CursoId {parsedCursoId} no existe. El alumno se importará sin curso.");
-            }
-
-            var alumno = new Models.Alumno
-            {
-                Nombre = nombre,
-                Apellido = apellido,
-                DNI = dni,
-                CursoId = cursoId,
-                Estado = Enums.EstadoAlumno.Activo,
-                FechaBaja = null
-            };
-
-            _context.Alumnos.Add(alumno);
-            await _context.SaveChangesAsync();
-
-            mensajes.Add($"Fila {fila.RowNumber()}: alumno {apellido}, {nombre} importado correctamente.");
         }
 
+        workbook.Dispose();
         return mensajes;
     }
 }
