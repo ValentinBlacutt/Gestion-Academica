@@ -6,4 +6,6 @@ public interface IEtlService
 {
     Task<byte[]> ExportarAlumnosAsync(int cursoId);
     Task<List<string>> ImportarAlumnosAsync(byte[] archivo);
+
+    Task<byte[]> ExportarAsistenciasMesAsync(int cursoId, int anio, int mes);
 }

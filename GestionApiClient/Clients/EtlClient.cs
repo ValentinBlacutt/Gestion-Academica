@@ -29,4 +29,11 @@ public class EtlClient
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<List<string>>();
     }
+
+    public async Task<byte[]?> ExportarAsistenciasMesAsync(int cursoId, int anio, int mes)
+    {
+        var response = await _httpClient.GetAsync($"api/etl/exportar/asistencias/{cursoId}/{anio}/{mes}");
+        if (!response.IsSuccessStatusCode) return null;
+        return await response.Content.ReadAsByteArrayAsync();
+    }
 }

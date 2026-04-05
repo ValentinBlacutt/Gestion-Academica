@@ -44,4 +44,14 @@ public class EtlController : ControllerBase
             return BadRequest($"Error al procesar el archivo: {ex.Message}");
         }
     }
+
+    [HttpGet("exportar/asistencias/{cursoId}/{anio}/{mes}")]
+    public async Task<IActionResult> ExportarAsistencias(int cursoId, int anio, int mes)
+    {
+        if (mes < 1 || mes > 12)
+            return BadRequest("El mes debe estar entre 1 y 12.");
+
+        var archivo = await _etlService.ExportarAsistenciasMesAsync(cursoId, anio, mes);
+        return File(archivo, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"asistencias_{cursoId}_{anio}_{mes:D2}.xlsx");
+    }
 }

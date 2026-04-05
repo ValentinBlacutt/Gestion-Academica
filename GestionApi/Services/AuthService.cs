@@ -1,11 +1,12 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using GestionApi.Data;
+﻿using GestionApi.Data;
+using GestionApi.DTOs;
 using GestionApi.Enums;
 using GestionApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace GestionApi.Services;
 
@@ -98,5 +99,39 @@ public class AuthService : IAuthService
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public async Task<bool> DesactivarUsuarioAsync(int usuarioId)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioId);
+        if (usuario == null) return false;
+
+        usuario.EstaActivo = false;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<UsuarioDTO>> GetAllUsuariosAsync()
+    {
+        return await _context.Usuarios
+            .Select(u => new UsuarioDTO
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                Rol = u.Rol.ToString(),
+                EstaActivo = u.EstaActivo
+            })
+            .ToListAsync();
+    }
+
+    public async Task<bool> ReactivarUsuarioAsync(int usuarioId)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioId);
+        if (usuario == null) return false;
+
+        usuario.EstaActivo = true;
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

@@ -40,4 +40,30 @@ public class AuthController : ControllerBase
         if (!resultado) return BadRequest("Token inválido o username ya existe.");
         return Ok("Cuenta activada correctamente.");
     }
+
+    [HttpPatch("usuarios/{id}/desactivar")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Desactivar(int id)
+    {
+        var resultado = await _authService.DesactivarUsuarioAsync(id);
+        if (!resultado) return NotFound("No se encontró el usuario.");
+        return NoContent();
+    }
+
+    [HttpGet("usuarios")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAll()
+    {
+        var usuarios = await _authService.GetAllUsuariosAsync();
+        return Ok(usuarios);
+    }
+
+    [HttpPatch("usuarios/{id}/reactivar")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Reactivar(int id)
+    {
+        var resultado = await _authService.ReactivarUsuarioAsync(id);
+        if (!resultado) return NotFound("No se encontró el usuario.");
+        return NoContent();
+    }
 }

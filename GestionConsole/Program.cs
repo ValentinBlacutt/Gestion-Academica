@@ -13,7 +13,6 @@ var client = new GestionApiClient.GestionApiClient(baseUrl);
 string? rolActual = null;
 
 // Helpers de permisos
-bool EsAdmin() => rolActual == "Admin";
 bool EsAdminODirectivo() => rolActual == "Admin" || rolActual == "Directivo";
 
 while (rolActual == null)
@@ -959,6 +958,7 @@ async Task MenuEtl()
         Console.WriteLine("=== IMPORTAR / EXPORTAR ===\n");
         Console.WriteLine("1. Exportar alumnos de un curso a Excel");
         Console.WriteLine("2. Importar alumnos desde Excel");
+        Console.WriteLine("3. Exportar asistencias del mes a Excel");
         Console.WriteLine("0. Volver\n");
         Console.Write("Elegí una opción: ");
 
@@ -974,6 +974,9 @@ async Task MenuEtl()
                 break;
             case "0":
                 volver = true;
+                break;
+            case "3":
+                await ExportarAsistenciasMes();
                 break;
             default:
                 Console.WriteLine("\nOpción inválida. Presioná cualquier tecla para volver.");
@@ -1071,7 +1074,64 @@ async Task ImportarAlumnos()
     Console.WriteLine("Presioná cualquier tecla para volver.");
     Console.ReadKey();
 }
+async Task ExportarAsistenciasMes()
+{
+    Console.Clear();
+    Console.WriteLine("=== EXPORTAR ASISTENCIAS DEL MES ===\n");
 
+    var cursos = await client.Cursos.GetAllAsync();
+    foreach (var c in cursos)
+        Console.WriteLine($"[{c.Id}] {c.Nombre} - {c.Anio} / {c.Division}");
+
+    Console.Write("\nIngresá el ID del curso: ");
+    if (!int.TryParse(Console.ReadLine(), out int cursoId))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.Write("Año (ej: 2026): ");
+    if (!int.TryParse(Console.ReadLine(), out int anio))
+    {
+        Console.WriteLine("\nAño inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.Write("Mes (1-12): ");
+    if (!int.TryParse(Console.ReadLine(), out int mes) || mes < 1 || mes > 12)
+    {
+        Console.WriteLine("\nMes inválido, debe ser un número entre 1 y 12.");
+        Console.ReadKey();
+        return;
+    }
+
+    var archivo = await client.Etl.ExportarAsistenciasMesAsync(cursoId, anio, mes);
+
+    if (archivo == null)
+    {
+        Console.WriteLine("\nError al exportar. Verificá que el curso exista.");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.Write("\nIngresá la ruta donde guardar el archivo (ej: C:\\Users\\Usuario\\Desktop\\asistencias.xlsx): ");
+    var ruta = Console.ReadLine()!;
+
+    try
+    {
+        await File.WriteAllBytesAsync(ruta, archivo);
+        Console.WriteLine("\nArchivo exportado correctamente.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"\nNo se pudo guardar el archivo: {ex.Message}");
+    }
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
 #endregion
 
 //Region encargada de manejo de usuarios
@@ -1085,7 +1145,10 @@ async Task MenuUsuarios()
     {
         Console.Clear();
         Console.WriteLine("=== USUARIOS ===\n");
-        Console.WriteLine("1. Invitar usuario");
+        Console.WriteLine("1. Ver todos los usuarios");
+        Console.WriteLine("2. Invitar usuario");
+        Console.WriteLine("3. Desactivar usuario");
+        Console.WriteLine("4. Reactivar usuario");
         Console.WriteLine("0. Volver\n");
         Console.Write("Elegí una opción: ");
 
@@ -1094,7 +1157,16 @@ async Task MenuUsuarios()
         switch (opcion)
         {
             case "1":
+                await VerUsuarios();
+                break;
+            case "2":
                 await InvitarUsuario();
+                break;
+            case "3":
+                await DesactivarUsuario();
+                break;
+            case "4":
+                await ReactivarUsuario();
                 break;
             case "0":
                 volver = true;
@@ -1143,4 +1215,76 @@ async Task InvitarUsuario()
     Console.ReadKey();
 }
 
+async Task DesactivarUsuario()
+{
+    Console.Clear();
+    Console.WriteLine("=== DESACTIVAR USUARIO ===\n");
+
+    Console.Write("Ingresá el ID del usuario a desactivar: ");
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    var resultado = await client.Auth.DesactivarUsuarioAsync(id);
+
+    if (resultado)
+        Console.WriteLine("\nUsuario desactivado correctamente.");
+    else
+        Console.WriteLine("\nNo se encontró el usuario.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+async Task VerUsuarios()
+{
+    Console.Clear();
+    Console.WriteLine("=== USUARIOS ===\n");
+
+    var usuarios = await client.Auth.GetAllUsuariosAsync();
+
+    if (usuarios.Count == 0)
+    {
+        Console.WriteLine("No hay usuarios registrados.");
+    }
+    else
+    {
+        foreach (var u in usuarios)
+        {
+            var estado = u.EstaActivo ? "Activo" : "Inactivo";
+            var username = u.Username ?? "Sin activar";
+            Console.WriteLine($"[{u.Id}] {username} - {u.Email} - {u.Rol} - {estado}");
+        }
+    }
+
+    Console.WriteLine("\nPresioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+async Task ReactivarUsuario()
+{
+    Console.Clear();
+    Console.WriteLine("=== REACTIVAR USUARIO ===\n");
+
+    Console.Write("Ingresá el ID del usuario a reactivar: ");
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    var resultado = await client.Auth.ReactivarUsuarioAsync(id);
+
+    if (resultado)
+        Console.WriteLine("\nUsuario reactivado correctamente.");
+    else
+        Console.WriteLine("\nNo se encontró el usuario.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
 #endregion

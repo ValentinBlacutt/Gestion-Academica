@@ -47,6 +47,23 @@ public class AuthClient
         });
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<bool> DesactivarUsuarioAsync(int id)
+    {
+        var response = await _httpClient.PatchAsync($"api/auth/usuarios/{id}/desactivar", null);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<List<UsuarioDTO>> GetAllUsuariosAsync()
+    {
+        return await _httpClient.GetFromJsonAsync<List<UsuarioDTO>>("api/auth/usuarios") ?? new List<UsuarioDTO>();
+    }
+
+    public async Task<bool> ReactivarUsuarioAsync(int id)
+    {
+        var response = await _httpClient.PatchAsync($"api/auth/usuarios/{id}/reactivar", null);
+        return response.IsSuccessStatusCode;
+    }
 }
 
 public class TokenResponse
