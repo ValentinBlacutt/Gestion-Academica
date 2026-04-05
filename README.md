@@ -49,9 +49,9 @@ La consola nunca maneja HTTP ni JSON directamente. Todo eso queda encapsulado en
 
 ---
 
-## Diagrama de la base de datos
+## DER
 
-![Diagrama ER](images/der.png)
+![DER](images/der.jpeg)
 
 ### Entidades
 
@@ -96,6 +96,8 @@ El sistema usa JWT con un ciclo de vida de tres etapas:
 2. **Invitación** — el Admin crea una invitación con email y rol, la API genera un token de activación que se le entrega al nuevo usuario
 3. **Activación** — el nuevo usuario ingresa el token, define su username y contraseña
 
+Cuando el Admin resetea la contraseña de un usuario, el sistema genera una contraseña temporal automáticamente y se la muestra al Admin para que se la comunique al usuario.
+
 ### Matriz de permisos
 
 | Funcionalidad | Admin | Directivo | Preceptor |
@@ -109,6 +111,7 @@ El sistema usa JWT con un ciclo de vida de tres etapas:
 | Ver resumen asistencias | si | si | si |
 | Exportar / Importar Excel | si | si | no |
 | Gestionar usuarios | si | no | no |
+| Cambiar propia contraseña | si | si | si |
 
 ---
 
@@ -121,8 +124,10 @@ El sistema usa JWT con un ciclo de vida de tres etapas:
 | POST | `/api/auth/invitar` | Invitar nuevo usuario (Admin) |
 | POST | `/api/auth/activar` | Activar cuenta con token |
 | GET | `/api/auth/usuarios` | Ver todos los usuarios (Admin) |
+| PATCH | `/api/auth/cambiar-password` | Cambiar propia contraseña |
 | PATCH | `/api/auth/usuarios/{id}/desactivar` | Desactivar usuario (Admin) |
 | PATCH | `/api/auth/usuarios/{id}/reactivar` | Reactivar usuario (Admin) |
+| PATCH | `/api/auth/usuarios/{id}/resetear-password` | Resetear contraseña (Admin) |
 
 ### Cursos
 | Método | URL | Descripción |
@@ -175,12 +180,13 @@ El sistema usa JWT con un ciclo de vida de tres etapas:
 - Los alumnos nunca se eliminan físicamente — su estado cambia mediante el enum `EstadoAlumno`
 - Al dar de baja o egresar: `CursoId = null`, `FechaBaja = hoy`
 - Un usuario desactivado no puede iniciar sesión
+- Al resetear la contraseña el sistema genera una contraseña temporal automáticamente
 
 ---
 
 ## Importar alumnos desde Excel
 
-El archivo debe tener la siguiente estructura sin fila de encabezado adicional:
+El archivo debe tener la siguiente estructura:
 
 | Nombre | Apellido | DNI | CursoId (opcional) |
 |--------|----------|-----|--------------------|
@@ -282,7 +288,9 @@ GestionAcademica/
 │   ├── Clients/           → Clientes HTTP por entidad
 │   ├── DTOs/              → DTOs del cliente
 │   └── GestionApiClient.cs → Punto de entrada del cliente
-└── GestionConsole/
-    ├── appsettings.json   → URL de la API
-    └── Program.cs         → Menú e interfaz de usuario
+├── GestionConsole/
+│   ├── appsettings.json   → URL de la API
+│   └── Program.cs         → Menú e interfaz de usuario
+└── images/
+    └── der.jpeg           → Diagrama entidad-relación
 ```

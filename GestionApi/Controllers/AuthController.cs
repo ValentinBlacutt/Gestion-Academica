@@ -66,4 +66,23 @@ public class AuthController : ControllerBase
         if (!resultado) return NotFound("No se encontró el usuario.");
         return NoContent();
     }
+
+    [HttpPatch("cambiar-password")]
+    [Authorize]
+    public async Task<IActionResult> CambiarPassword([FromBody] CambiarPasswordDTO dto)
+    {
+        var usuarioId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var resultado = await _authService.CambiarPasswordAsync(usuarioId, dto.PasswordActual, dto.PasswordNueva);
+        if (!resultado) return BadRequest("La contraseña actual es incorrecta.");
+        return NoContent();
+    }
+
+    [HttpPatch("usuarios/{id}/resetear-password")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ResetearPassword(int id)
+    {
+        var passwordTemporal = await _authService.ResetearPasswordAsync(id);
+        if (passwordTemporal == null) return NotFound("No se encontró el usuario.");
+        return Ok(new { passwordTemporal });
+    }
 }

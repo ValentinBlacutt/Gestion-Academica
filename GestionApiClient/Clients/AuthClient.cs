@@ -64,9 +64,33 @@ public class AuthClient
         var response = await _httpClient.PatchAsync($"api/auth/usuarios/{id}/reactivar", null);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<bool> CambiarPasswordAsync(string passwordActual, string passwordNueva)
+    {
+        var response = await _httpClient.PatchAsJsonAsync("api/auth/cambiar-password", new CambiarPasswordDTO
+        {
+            PasswordActual = passwordActual,
+            PasswordNueva = passwordNueva
+        });
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<string?> ResetearPasswordAsync(int id)
+    {
+        var response = await _httpClient.PatchAsync($"api/auth/usuarios/{id}/resetear-password", null);
+        if (!response.IsSuccessStatusCode) return null;
+        var resultado = await response.Content.ReadFromJsonAsync<PasswordTemporalResponse>();
+        return resultado?.PasswordTemporal;
+    }
+
 }
 
 public class TokenResponse
 {
     public string Token { get; set; } = string.Empty;
+}
+
+public class PasswordTemporalResponse
+{
+    public string PasswordTemporal { get; set; } = string.Empty;
 }

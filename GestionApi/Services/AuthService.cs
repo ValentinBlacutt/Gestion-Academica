@@ -134,4 +134,26 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> CambiarPasswordAsync(int usuarioId, string passwordActual, string passwordNueva)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioId);
+        if (usuario == null) return false;
+        if (!BCrypt.Net.BCrypt.Verify(passwordActual, usuario.PasswordHash)) return false;
+
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordNueva);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<string?> ResetearPasswordAsync(int usuarioId)
+    {
+        var usuario = await _context.Usuarios.FindAsync(usuarioId);
+        if (usuario == null) return null;
+
+        var passwordTemporal = Guid.NewGuid().ToString("N")[..8];
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordTemporal);
+        await _context.SaveChangesAsync();
+        return passwordTemporal;
+    }
 }

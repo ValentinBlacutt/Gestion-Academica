@@ -10,4 +10,7 @@ public interface IAuthService
     Task<bool> DesactivarUsuarioAsync(int usuarioId);
     Task<List<UsuarioDTO>> GetAllUsuariosAsync();
     Task<bool> ReactivarUsuarioAsync(int usuarioId);
+
+    Task<bool> CambiarPasswordAsync(int usuarioId, string passwordActual, string passwordNueva);
+    Task<string?> ResetearPasswordAsync(int usuarioId);
 }

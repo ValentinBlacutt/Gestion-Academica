@@ -60,6 +60,8 @@ while (!salir)
     if (rolActual == "Admin")
         Console.WriteLine("5. Usuarios");
 
+    Console.WriteLine("6. Cambiar mi contraseña");
+
     Console.WriteLine("0. Salir\n");
     Console.Write("Elegí una opción: ");
 
@@ -89,6 +91,9 @@ while (!salir)
             else
                 Console.WriteLine("\nNo tenés permisos. Presioná cualquier tecla.");
             Console.ReadKey();
+            break;
+        case "6":
+            await CambiarMiPassword();
             break;
         case "0":
             salir = true;
@@ -1149,6 +1154,7 @@ async Task MenuUsuarios()
         Console.WriteLine("2. Invitar usuario");
         Console.WriteLine("3. Desactivar usuario");
         Console.WriteLine("4. Reactivar usuario");
+        Console.WriteLine("5. Resetear contraseña de un usuario");
         Console.WriteLine("0. Volver\n");
         Console.Write("Elegí una opción: ");
 
@@ -1167,6 +1173,9 @@ async Task MenuUsuarios()
                 break;
             case "4":
                 await ReactivarUsuario();
+                break;
+            case "5":
+                await ResetearPassword();
                 break;
             case "0":
                 volver = true;
@@ -1281,6 +1290,71 @@ async Task ReactivarUsuario()
 
     if (resultado)
         Console.WriteLine("\nUsuario reactivado correctamente.");
+    else
+        Console.WriteLine("\nNo se encontró el usuario.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+async Task CambiarMiPassword()
+{
+    Console.Clear();
+    Console.WriteLine("=== CAMBIAR CONTRASEÑA ===\n");
+
+    Console.Write("Contraseña actual: ");
+    var actual = Console.ReadLine()!;
+
+    Console.Write("Contraseña nueva: ");
+    var nueva = Console.ReadLine()!;
+
+    if (string.IsNullOrWhiteSpace(nueva))
+    {
+        Console.WriteLine("\nLa contraseña nueva no puede estar vacía.");
+        Console.ReadKey();
+        return;
+    }
+
+    var resultado = await client.Auth.CambiarPasswordAsync(actual, nueva);
+
+    if (resultado)
+        Console.WriteLine("\nContraseña cambiada correctamente.");
+    else
+        Console.WriteLine("\nLa contraseña actual es incorrecta.");
+
+    Console.WriteLine("Presioná cualquier tecla para volver.");
+    Console.ReadKey();
+}
+
+async Task ResetearPassword()
+{
+    Console.Clear();
+    Console.WriteLine("=== RESETEAR CONTRASEÑA ===\n");
+
+    var usuarios = await client.Auth.GetAllUsuariosAsync();
+    foreach (var u in usuarios)
+    {
+        var estado = u.EstaActivo ? "Activo" : "Inactivo";
+        var username = u.Username ?? "Sin activar";
+        Console.WriteLine($"[{u.Id}] {username} - {u.Email} - {u.Rol} - {estado}");
+    }
+
+    Console.Write("\nIngresá el ID del usuario: ");
+    if (!int.TryParse(Console.ReadLine(), out int id))
+    {
+        Console.WriteLine("\nID inválido.");
+        Console.ReadKey();
+        return;
+    }
+
+    var passwordTemporal = await client.Auth.ResetearPasswordAsync(id);
+
+    if (passwordTemporal != null)
+    {
+        Console.WriteLine($"\nContraseña reseteada correctamente.");
+        Console.WriteLine($"Contraseña temporal: {passwordTemporal}");
+        Console.WriteLine("Comunicásela al usuario para que pueda ingresar y cambiarla.");
+    }
     else
         Console.WriteLine("\nNo se encontró el usuario.");
 
